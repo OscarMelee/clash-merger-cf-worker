@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订阅管理 - Clash 订阅合并工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+        }
+
+        .btn-logout {
+            padding: 10px 20px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: #d32f2f;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-header h2 {
+            color: #333;
+            font-size: 20px;
+        }
+
+        .btn-add {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+        }
+
+        .sub-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sub-item {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            transition: border-color 0.3s;
+        }
+
+        .sub-item:hover {
+            border-color: #667eea;
+        }
+
+        .sub-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .sub-item-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .sub-item-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-edit, .btn-delete {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: opacity 0.3s;
+        }
+
+        .btn-edit {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-edit:hover, .btn-delete:hover {
+            opacity: 0.8;
+        }
+
+        .sub-item-url {
+            color: #666;
+            font-size: 14px;
+            word-break: break-all;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .modal-header {
+            font-size: 22px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-cancel, .btn-save {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.3s;
+        }
+
+        .btn-cancel {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-cancel:hover, .btn-save:hover {
+            opacity: 0.8;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .message.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 订阅管理</h1>
+            <button class="btn-logout" onclick="logout()">退出登录</button>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>订阅列表</h2>
+                <button class="btn-add" onclick="openAddModal()">➕ 添加订阅</button>
+            </div>
+
+            <div id="subList" class="sub-list">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>自定义代理</h2>
+                <button class="btn-add" onclick="openAddCustomProxyModal()">➕ 添加代理</button>
+            </div>
+
+            <div id="customProxyList" class="sub-list">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑订阅模态框 -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="modalTitle">添加订阅</div>
+            <form id="subForm">
+                <div class="form-group">
+                    <label for="subName">订阅名称</label>
+                    <input type="text" id="subName" placeholder="例如：机场A" required>
+                </div>
+                <div class="form-group">
+                    <label for="subUrl">订阅地址</label>
+                    <input type="url" id="subUrl" placeholder="https://example.com/sub?token=xxx" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">取消</button>
+                    <button type="submit" class="btn-save">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加/编辑自定义代理模态框 -->
+    <div id="customProxyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="customProxyModalTitle">添加自定义代理</div>
+            <form id="customProxyForm">
+                <div class="form-group">
+                    <label for="proxyName">代理名称</label>
+                    <input type="text" id="proxyName" placeholder="例如：My Hysteria2" required>
+                </div>
+                <div class="form-group">
+                    <label for="proxyConfig">代理配置 (JSON)</label>
+                    <textarea id="proxyConfig" rows="10" placeholder='{"name": "My Hysteria2", "type": "hysteria2", "server": "example.com", "port": 443, "password": "password"}' required></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeCustomProxyModal()">取消</button>
+                    <button type="submit" class="btn-save">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let subs = [];
+        let editingIndex = -1;
+        let customProxies = [];
+        let editingCustomProxyIndex = -1;
+
+        // 页面加载时检查登录状态
+        window.addEventListener('load', () => {
+            const token = sessionStorage.getItem('auth_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            loadSubs();
+            loadCustomProxies();
+        });
+
+        // 加载订阅列表
+        async function loadSubs() {
+            try {
+                const token = sessionStorage.getItem('auth_token');
+                const response = await fetch('/api/subs', {
+                    headers: {
+                        'Authorization': token
+                    }
+                });
+
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('加载失败');
+                }
+
+                const data = await response.json();
+                subs = data.subs || [];
+                renderSubs();
+            } catch (error) {
+                showMessage('加载订阅列表失败：' + error.message, 'error');
+            }
+        }
+
+        // 渲染订阅列表
+        function renderSubs() {
+            const subList = document.getElementById('subList');
+
+            if (subs.length === 0) {
+                subList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>暂无订阅，点击右上角添加订阅</p>
+                    </div>
+                `;
+                return;
+            }
+
+            subList.innerHTML = subs.map((sub, index) => `
+                <div class="sub-item">
+                    <div class="sub-item-header">
+                        <div class="sub-item-name">${escapeHtml(sub.name)}</div>
+                        <div class="sub-item-actions">
+                            <button class="btn-edit" onclick="openEditModal(${index})">编辑</button>
+                            <button class="btn-delete" onclick="deleteSub(${index})">删除</button>
+                        </div>
+                    </div>
+                    <div class="sub-item-url">${escapeHtml(sub.url)}</div>
+                </div>
+            `).join('');
+        }
+
+        // 打开添加模态框
+        function openAddModal() {
+            editingIndex = -1;
+            document.getElementById('modalTitle').textContent = '添加订阅';
+            document.getElementById('subName').value = '';
+            document.getElementById('subUrl').value = '';
+            document.getElementById('modal').classList.add('show');
+        }
+
+        // 打开编辑模态框
+        function openEditModal(index) {
+            editingIndex = index;
+            document.getElementById('modalTitle').textContent = '编辑订阅';
+            document.getElementById('subName').value = subs[index].name;
+            document.getElementById('subUrl').value = subs[index].url;
+            document.getElementById('modal').classList.add('show');
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+
+        // 保存订阅
+        document.getElementById('subForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('subName').value.trim();
+            const url = document.getElementById('subUrl').value.trim();
+
+            if (editingIndex === -1) {
+                // 添加新订阅
+                subs.push({ name, url });
+            } else {
+                // 编辑现有订阅
+                subs[editingIndex] = { name, url };
+            }
+
+            await saveSubs();
+            closeModal();
+        });
+
+        // 删除订阅
+        async function deleteSub(index) {
+            if (!confirm('确定要删除这个订阅吗？')) {
+                return;
+            }
+
+            subs.splice(index, 1);
+            await saveSubs();
+        }
+
+        // 加载自定义代理列表
+        async function loadCustomProxies() {
+            try {
+                const token = sessionStorage.getItem('auth_token');
+                const response = await fetch('/api/custom-proxies', {
+                    headers: {
+                        'Authorization': token
+                    }
+                });
+
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('加载失败');
+                }
+
+                const data = await response.json();
+                customProxies = data.customProxies || [];
+                renderCustomProxies();
+            } catch (error) {
+                showMessage('加载自定义代理列表失败：' + error.message, 'error');
+            }
+        }
+
+        // 渲染自定义代理列表
+        function renderCustomProxies() {
+            const customProxyList = document.getElementById('customProxyList');
+
+            if (customProxies.length === 0) {
+                customProxyList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>暂无自定义代理，点击右上角添加代理</p>
+                    </div>
+                `;
+                return;
+            }
+
+            customProxyList.innerHTML = customProxies.map((proxy, index) => `
+                <div class="sub-item">
+                    <div class="sub-item-header">
+                        <div class="sub-item-name">${escapeHtml(proxy.name)}</div>
+                        <div class="sub-item-actions">
+                            <button class="btn-edit" onclick="openEditCustomProxyModal(${index})">编辑</button>
+                            <button class="btn-delete" onclick="deleteCustomProxy(${index})">删除</button>
+                        </div>
+                    </div>
+                    <div class="sub-item-url">类型: ${escapeHtml(proxy.type || 'unknown')} | 服务器: ${escapeHtml(proxy.server || 'N/A')}</div>
+                </div>
+            `).join('');
+        }
+
+        // 保存到服务器
+        async function saveSubs() {
+            try {
+                const token = sessionStorage.getItem('auth_token');
+                const response = await fetch('/api/subs', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token
+                    },
+                    body: JSON.stringify({ subs })
+                });
+
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('保存失败');
+                }
+
+                showMessage('保存成功！', 'success');
+                renderSubs();
+            } catch (error) {
+                showMessage('保存失败：' + error.message, 'error');
+            }
+        }
+
+        // 打开添加自定义代理模态框
+        function openAddCustomProxyModal() {
+            editingCustomProxyIndex = -1;
+            document.getElementById('customProxyModalTitle').textContent = '添加自定义代理';
+            document.getElementById('proxyName').value = '';
+            document.getElementById('proxyConfig').value = '';
+            document.getElementById('customProxyModal').classList.add('show');
+        }
+
+        // 打开编辑自定义代理模态框
+        function openEditCustomProxyModal(index) {
+            editingCustomProxyIndex = index;
+            const proxy = customProxies[index];
+            document.getElementById('customProxyModalTitle').textContent = '编辑自定义代理';
+            document.getElementById('proxyName').value = proxy.name;
+            document.getElementById('proxyConfig').value = JSON.stringify(proxy, null, 2);
+            document.getElementById('customProxyModal').classList.add('show');
+        }
+
+        // 关闭自定义代理模态框
+        function closeCustomProxyModal() {
+            document.getElementById('customProxyModal').classList.remove('show');
+        }
+
+        // 删除自定义代理
+        async function deleteCustomProxy(index) {
+            if (!confirm('确定要删除这个自定义代理吗？')) {
+                return;
+            }
+
+            customProxies.splice(index, 1);
+            await saveCustomProxies();
+        }
+
+        // 保存自定义代理到服务器
+        async function saveCustomProxies() {
+            try {
+                const token = sessionStorage.getItem('auth_token');
+                const response = await fetch('/api/custom-proxies', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token
+                    },
+                    body: JSON.stringify({ customProxies })
+                });
+
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('保存失败');
+                }
+
+                showMessage('保存成功！', 'success');
+                renderCustomProxies();
+            } catch (error) {
+                showMessage('保存失败：' + error.message, 'error');
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            sessionStorage.removeItem('auth_token');
+            window.location.href = '/login';
+        }
+
+        // 显示消息
+        function showMessage(text, type) {
+            const message = document.getElementById('message');
+            message.textContent = text;
+            message.className = `message ${type} show`;
+            setTimeout(() => {
+                message.classList.remove('show');
+            }, 3000);
+        }
+
+        // HTML 转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 自定义代理表单提交
+        document.getElementById('customProxyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('proxyName').value.trim();
+            const configStr = document.getElementById('proxyConfig').value.trim();
+
+            // 验证 JSON 格式
+            let proxyConfig;
+            try {
+                proxyConfig = JSON.parse(configStr);
+            } catch (error) {
+                showMessage('JSON 格式错误：' + error.message, 'error');
+                return;
+            }
+
+            // 确保配置中包含 name 字段
+            proxyConfig.name = name;
+
+            if (editingCustomProxyIndex === -1) {
+                // 添加新代理
+                customProxies.push(proxyConfig);
+            } else {
+                // 编辑现有代理
+                customProxies[editingCustomProxyIndex] = proxyConfig;
+            }
+
+            await saveCustomProxies();
+            closeCustomProxyModal();
+        });
+
+        // 点击模态框外部关闭
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') {
+                closeModal();
+            }
+        });
+
+        document.getElementById('customProxyModal').addEventListener('click', (e) => {
+            if (e.target.id === 'customProxyModal') {
+                closeCustomProxyModal();
+            }
+        });
+    </script>
+</body>
+</html>
